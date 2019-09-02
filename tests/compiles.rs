@@ -1,4 +1,5 @@
 use enum_dispatch::enum_dispatch;
+use std::convert::TryFrom;
 
 #[enum_dispatch(Traited)]
 trait TestTrait {
@@ -73,12 +74,16 @@ impl TestTrait for C {
     }
 }
 
+#[derive(Debug)]
 pub struct A;
+#[derive(Debug)]
 pub struct B;
+#[derive(Debug)]
 pub struct C {
     custom_string: String,
     custom_number: f64,
 }
+#[derive(Debug)]
 pub struct D {
     a_string: String,
 }
@@ -106,6 +111,7 @@ impl TestTrait for D {
 }
 
 #[enum_dispatch]
+#[derive(Debug)]
 pub enum Traited {
     A,
     B,
@@ -149,6 +155,14 @@ fn main() {
     b.mutable(10.0);
     c.mutable(11.0);
     d.mutable(90.0);
+    let a = B::try_from(a).unwrap_err();
+    let a: Traited = A::try_from(a).unwrap().into();
+    let b = A::try_from(b).unwrap_err();
+    let b: Traited = B::try_from(b).unwrap().into();
+    let c = A::try_from(c).unwrap_err();
+    let c: Traited = C::try_from(c).unwrap().into();
+    let d = A::try_from(d).unwrap_err();
+    let d: Traited = D::try_from(d).unwrap().into();
     assert_eq!(a.self_by_value(8.2), 9.2);
     assert_eq!(b.self_by_value(123.45), 125.45);
     assert_eq!(c.self_by_value(2.4), 13.4);

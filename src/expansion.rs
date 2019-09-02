@@ -43,10 +43,14 @@ pub fn add_enum_impls(enum_def: EnumDispatchItem, traitdef: syn::ItemTrait) -> p
     }
 
     let from_impls = generate_from_impls(&enum_def.ident, &variants, &trait_impl.generics);
+    let try_from_impls = generate_try_from_impls(&enum_def.ident, &variants, &trait_impl.generics);
 
     let mut impls = proc_macro2::TokenStream::new();
     for from_impl in from_impls.iter() {
         from_impl.to_tokens(&mut impls);
+    }
+    for try_from_impl in try_from_impls.iter() {
+        try_from_impl.to_tokens(&mut impls);
     }
     trait_impl.to_tokens(&mut impls);
     impls
@@ -64,6 +68,31 @@ fn generate_from_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchVaria
                 impl #impl_generics ::std::convert::From<#variant_type> for #enumname #ty_generics #where_clause {
                     fn from(v: #variant_type) -> #enumname #ty_generics {
                         #enumname::#variant_name(v)
+                    }
+                }
+            };
+            syn::parse(impl_block.into()).unwrap()
+        }).collect()
+}
+
+/// Generates impls of std::convert::TryFrom for each enum variant.
+fn generate_try_from_impls(enumname: &syn::Ident, enumvariants: &[&EnumDispatchVariant], generics: &syn::Generics) -> Vec<syn::ItemImpl> {
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    enumvariants
+        .iter()
+        .map(|variant| {
+            let variant_name = &variant.ident;
+            let variant_type = &variant.ty;
+            let impl_block = quote! {
+                impl #impl_generics ::std::convert::TryFrom<#enumname #ty_generics> for #variant_type #where_clause {
+                    type Error = #enumname #ty_generics;
+
+                    fn try_from(e: #enumname #ty_generics) -> Result<#variant_type, #enumname #ty_generics> {
+                        if let #enumname::#variant_name(v) = e {
+                            Ok(v)
+                        } else {
+                            Err(e)
+                        }
                     }
                 }
             };

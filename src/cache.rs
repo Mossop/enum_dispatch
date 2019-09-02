@@ -92,5 +92,5 @@ pub fn fulfilled_by_trait(defname: &::proc_macro2::Ident) -> Vec<enum_dispatch_i
 }
 
 pub fn remove_entry(defname: &::proc_macro2::Ident) {
-    deferredLinks.lock().unwrap().remove_entry(&defname.to_string());
+    DEFERRED_LINKS.lock().unwrap().remove_entry(&defname.to_string());
 }
